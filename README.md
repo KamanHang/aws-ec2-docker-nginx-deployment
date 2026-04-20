@@ -1,59 +1,49 @@
-# MyAngularApp
+# my-angular-app
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
+## Docker + Nginx (production build)
 
-## Development server
+This repo includes:
 
-To start a local development server, run:
+- **`dockerfile`**: multi-stage Docker build (Node builds Angular, Nginx serves static files)
+- **`nginx.conf`**: Nginx config with `try_files` to support Angular client-side routing
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Build the image (local)
 
 ```bash
-ng generate component component-name
+docker build -f dockerfile -t my-angular-app:latest .
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Run the container (local)
 
 ```bash
-ng generate --help
+docker run --rm -p 8080:80 my-angular-app:latest
 ```
 
-## Building
+Then open `http://localhost:8080`.
 
-To build the project run:
+### What the files do
+
+- **`dockerfile`**
+  - Builds the Angular app via `npm run build`
+  - Copies the build output from `dist/my-angular-app/browser` into Nginx at `/usr/share/nginx/html`
+  - Replaces the default Nginx site config with `nginx.conf`
+
+- **`nginx.conf`**
+  - Serves `index.html` for unknown routes:
+    - `try_files $uri $uri/ /index.html;`
+
+### Optional: build & push with buildx
+
+See **`docker-build.md`** for the `docker buildx` command to build for `linux/amd64` and push to a registry.
+
+### Deploy flow (Docker Hub → EC2)
+
+- **Build the image** (locally/CI) and **push to Docker Hub**
+- On the **EC2 instance** (with Docker installed/running), **pull the same image** from Docker Hub and run it
+
+Example on EC2:
 
 ```bash
-ng build
+docker pull <dockerhub-username>/<image-name>:latest
+docker run -d --restart unless-stopped -p 80:80 <dockerhub-username>/<image-name>:latest
 ```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
