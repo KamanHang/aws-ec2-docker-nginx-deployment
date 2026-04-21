@@ -31,5 +31,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: kamanhang/nginx-angular-app:latest
+          tags: kamanhang/ci-cd-nginx-angular-app:latest
           platforms: linux/amd64
