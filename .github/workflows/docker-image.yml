@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: CI/CD - Build, Push, Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,11 +25,24 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 4. Build and push image
-      - name: Build and Push
+      # 4. Build and Push Docker Image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: kamanhang/ci-cd-nginx-angular-app:latest
           platforms: linux/amd64
+
+      # 5. Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            sudo docker pull kamanhang/ci-cd-nginx-angular-app:latest
+            sudo docker stop angular-app || true
+            sudo docker rm angular-app || true
+            sudo docker run -d -p 80:80 --name angular-app kamanhang/ci-cd-nginx-angular-app:latest
